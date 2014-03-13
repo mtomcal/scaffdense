@@ -1,4 +1,5 @@
 """ScaffDense
+Michael A Tomcal 2014
 
 Usage:
     scaffdense.py <scaffold> <blastdb> --threads=<threads> [--e-value=<value>] [--n-scaffolds=<top_n_scafs>]
