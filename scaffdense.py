@@ -20,7 +20,7 @@ from multiprocessing import Pool, Manager
 from docopt import docopt
 from Bio import SeqIO
 from Bio.Blast import NCBIXML
-from plumbum.cmd import perl, grep, augustus, tblastn, rm
+from plumbum.cmd import perl, grep, augustus, tblastn, rm, cp
 
 
 TEMPDIR = None
@@ -47,6 +47,9 @@ def tmp_path(filename):
         TEMPDIR = tempfile.mkdtemp()
     return os.path.join(TEMPDIR, filename)
 
+def copy_to_tmp(path):
+    pipeline = cp[path, tmp_path('')]
+    pipeline()
 
 def read_file(filename):
     with open(filename, 'r') as reader:
@@ -62,13 +65,14 @@ def read_fasta(filename):
 def get_filename(filename):
     return os.path.basename(filename).split('.')[0]
 
+def get_script_dir():
+    return os.path.dirname(os.path.realpath(__file__))
 
 def convert_single_line(filename):
-    pipeline = perl['singleline.pl', filename + '.scafSeq'] |\
+    pipeline = perl[get_script_dir() + '/singleline.pl', tmp_path(filename + '.scafSeq')] |\
         grep['-A1', '>scaffold'] \
         > tmp_path('filtered_' + filename + '.fasta')
     pipeline()
-
 
 def get_top_n_scaffs(filename, n=10):
     global SCAFFOLDS
@@ -117,7 +121,7 @@ def run_parallel(threads, database, evalue="1e-10"):
 
 
 def run_fetch_prot_seq(filename):
-    pipeline = perl['getAnnoFasta.pl', tmp_path(filename + '.aug')]
+    pipeline = perl[get_script_dir() + '/getAnnoFasta.pl', tmp_path(filename + '.aug')]
     pipeline()
 
 def count_aa_records(filename):
@@ -164,7 +168,7 @@ def count_scaffold_hits(filename):
 
 def write_results_csv(filename):
     global RESULTS
-    with open(filename + '.csv', 'w') as out:
+    with open(os.getcwd() + '/' + filename + '.csv', 'w') as out:
         file_writer = csv.writer(out)
         file_writer.writerow(
             ['scaffold', 'best_hit_scaffold', 'best_hit_scaffold_count', 'total_hits', 'p'])
@@ -176,8 +180,9 @@ if __name__ == '__main__':
 
     if arguments['<scaffold>'] and arguments['<blastdb>']:
         filename = get_filename(arguments['<scaffold>'])
+        copy_to_tmp(os.path.abspath(arguments['<scaffold>']))
         threads = int(arguments['--threads'])
-        database = arguments['<blastdb>']
+        database = os.path.abspath(arguments['<blastdb>'])
         evalue = arguments['--e-value']
         n_scafs = arguments['--n-scaffolds']
         convert_single_line(filename)

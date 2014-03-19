@@ -1,9 +1,8 @@
 #!/bin/bash
 #PBS -N ScaffDense 
-#PBS -l nodes='1':ppn='10'
-#PBS -q generic 
+#PBS -q fatnodes 
 
-dir=/path/to/scaffdense/folder
+dir=/home4/mtomcal/scaffdense
 
 source ~/.bash_profile
 
@@ -17,4 +16,4 @@ module load blast
 
 pip install -r scaffdense_requirements.txt --user
 
-python scaffdense.py <scaffold> <blastdb> --threads=10
+python scaffdense.py k49.scafSeq ../guttatus_blast/MguttatusNuclBlast --threads=30 --n-scaffolds=30
